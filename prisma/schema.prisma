@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  DRIVER
+  ADMIN
+  SUPERADMIN
+}
+
+enum DriverApproval {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DriverWorkStatus {
+  AVAILABLE
+  BUSY
+}
+
+enum BookingStatus {
+  PENDING
+  ASSIGNED
+  ACCEPTED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  location     String?
+  whatsapp     String?
+  plainPassword String?
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driverProfile      DriverProfile?
+  bookingsAsCustomer Booking[] @relation("CustomerBooking")
+  bookingsAsDriver   Booking[] @relation("DriverBooking")
+
+  @@map("user")
+}
+
+model DriverProfile {
+  id              String           @id @default(cuid())
+  userId          String           @unique
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carType         String
+  vehicleNumber   String
+  vehiclePhotoUrl String? @db.LongText
+  licensePhotoUrl String? @db.LongText
+  approvalStatus  DriverApproval   @default(PENDING)
+  workStatus      DriverWorkStatus @default(AVAILABLE)
+
+  @@map("driverprofile")
+}
+
+model CarCategory {
+  id                Int    @id @default(autoincrement())
+  name              String
+  type              String
+  pricePerKm        Float
+  seats             Int
+  image             String @db.LongText
+  eta               String @default("5 mins")
+  sortOrder         Int    @default(0)
+  commissionPercent Float  @default(12.0)
+
+  @@map("carcategory")
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  customerId   String
+  customer     User          @relation("CustomerBooking", fields: [customerId], references: [id])
+  driverId     String?
+  driver       User?         @relation("DriverBooking", fields: [driverId], references: [id])
+  pickupText   String        @db.VarChar(512)
+  dropText     String        @db.VarChar(512)
+  pickupLat    Float?
+  pickupLng    Float?
+  dropLat      Float?
+  dropLng      Float?
+  routeGeoJson String?       @db.LongText
+  distanceKm   Float         @default(0)
+  fare         Float
+  carName      String
+  status       BookingStatus @default(PENDING)
+  bookingDate  String
+  bookingTime  String
+  createdAt    DateTime      @default(now())
+
+  payments Payment[]
+
+  @@map("booking")
+}
+
+model Payment {
+  id           Int      @id @default(autoincrement())
+  bookingId    String?
+  booking      Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  customerName String
+  amount       Float
+  method       String
+  status       String
+  date         String
+
+  @@map("payment")
+}
