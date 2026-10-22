@@ -50,8 +50,8 @@ export async function initWhatsApp() {
         }
 
         console.log('\n======================================================');
-        console.log('📲 [SAFARSETU WHATSAPP BOT] SCAN THIS QR CODE IN WHATSAPP:');
-        console.log('Or Open In Browser: http://localhost:4000/api/auth/whatsapp/qr');
+        const serverUrl = process.env.APP_URL || 'https://safarsetubackend-18-10-26.onrender.com';
+        console.log(`Or Open In Browser: ${serverUrl}/api/auth/whatsapp/qr`);
         console.log('======================================================\n');
         try {
           qrcodeTerminal.generate(qr, { small: true });

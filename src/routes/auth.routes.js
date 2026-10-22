@@ -109,14 +109,15 @@ router.post('/send-otp', async (req, res) => {
     otpStore.set(phone, { otp: generatedOtp, expiresAt });
     console.log(`📲 [FALLBACK OTP GENERATED] Phone: ${phone} -> OTP: ${generatedOtp}`);
 
-    return res.json({
-      success: true,
-      channel: 'SCREEN_FALLBACK',
-      message: 'WhatsApp Bot connect nahi hai. QR scan karne ke liye http://localhost:4000/api/auth/whatsapp/qr kholein.',
-      phone,
-      otp: generatedOtp,
-      expiresIn: 300,
-    });
+      const serverUrl = process.env.APP_URL || 'https://safarsetubackend-18-10-26.onrender.com';
+      return res.json({
+        success: true,
+        channel: 'SCREEN_FALLBACK',
+        message: `WhatsApp Bot connect nahi hai. QR scan karne ke liye ${serverUrl}/api/auth/whatsapp/qr kholein.`,
+        phone,
+        otp: generatedOtp,
+        expiresIn: 300,
+      });
   } catch (e) {
     console.error('SEND_OTP_ERROR:', e);
     return res.status(500).json({ message: 'Failed to send OTP' });
