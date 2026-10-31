@@ -527,4 +527,69 @@ router.get('/dashboard-stats', async (req, res) => {
   }
 });
 
+// ── ADMIN APP SETTINGS (DYNAMIC QR CODE, UPI ID & HELPLINES) ──
+router.get('/settings', async (_req, res) => {
+  try {
+    let settings = null;
+    try {
+      settings = await prisma.appSettings.findFirst();
+    } catch (_err) {}
+
+    return res.json({
+      qrCodeUrl: settings?.qrCodeUrl || null,
+      upiId: settings?.upiId || '9755339783@upi',
+      advanceAmount: settings?.advanceAmount || 200,
+      helpline1: settings?.helpline1 || '6261828036',
+      helpline2: settings?.helpline2 || '9755339783',
+    });
+  } catch (e) {
+    return res.json({
+      qrCodeUrl: null,
+      upiId: '9755339783@upi',
+      advanceAmount: 200,
+      helpline1: '6261828036',
+      helpline2: '9755339783',
+    });
+  }
+});
+
+router.patch('/settings', async (req, res) => {
+  try {
+    const { qrCodeUrl, upiId, advanceAmount, helpline1, helpline2 } = req.body;
+    let existing = null;
+    try {
+      existing = await prisma.appSettings.findFirst();
+    } catch (_err) {}
+
+    let updated;
+    if (existing) {
+      updated = await prisma.appSettings.update({
+        where: { id: existing.id },
+        data: {
+          ...(qrCodeUrl !== undefined ? { qrCodeUrl } : {}),
+          ...(upiId !== undefined ? { upiId } : {}),
+          ...(advanceAmount !== undefined ? { advanceAmount: parseFloat(advanceAmount) } : {}),
+          ...(helpline1 !== undefined ? { helpline1 } : {}),
+          ...(helpline2 !== undefined ? { helpline2 } : {}),
+        },
+      });
+    } else {
+      updated = await prisma.appSettings.create({
+        data: {
+          id: 1,
+          qrCodeUrl: qrCodeUrl || null,
+          upiId: upiId || '9755339783@upi',
+          advanceAmount: advanceAmount ? parseFloat(advanceAmount) : 200,
+          helpline1: helpline1 || '6261828036',
+          helpline2: helpline2 || '9755339783',
+        },
+      });
+    }
+    return res.json({ success: true, settings: updated });
+  } catch (e) {
+    console.error('UPDATE_ADMIN_SETTINGS_ERROR:', e);
+    return res.status(500).json({ message: 'Failed to update settings' });
+  }
+});
+
 export default router;

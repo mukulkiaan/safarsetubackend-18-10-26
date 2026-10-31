@@ -53,6 +53,9 @@ export function bookingToJson(b) {
     pickupLng: b.pickupLng,
     dropLat: b.dropLat,
     dropLng: b.dropLng,
+    advancePaid: b.advancePaid || 0,
+    advanceStatus: b.advanceStatus || 'PENDING',
+    advanceUtr: b.advanceUtr || null,
   };
 }
 

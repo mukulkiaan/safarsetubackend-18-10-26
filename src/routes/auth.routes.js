@@ -4,6 +4,7 @@ import prisma from '../prisma.js';
 import { signToken, authMiddleware } from '../auth.js';
 import { sendSmsOtp } from '../services/sms.service.js';
 import { sendWhatsAppOtp, isWhatsAppReady, getWhatsAppStatus } from '../services/whatsapp.service.js';
+import { notifyAdminNewCustomer } from '../services/notification.service.js';
 
 const router = Router();
 
@@ -109,15 +110,14 @@ router.post('/send-otp', async (req, res) => {
     otpStore.set(phone, { otp: generatedOtp, expiresAt });
     console.log(`📲 [FALLBACK OTP GENERATED] Phone: ${phone} -> OTP: ${generatedOtp}`);
 
-      const serverUrl = process.env.APP_URL || 'https://safarsetubackend-18-10-26.onrender.com';
-      return res.json({
-        success: true,
-        channel: 'SCREEN_FALLBACK',
-        message: `WhatsApp Bot connect nahi hai. QR scan karne ke liye ${serverUrl}/api/auth/whatsapp/qr kholein.`,
-        phone,
-        otp: generatedOtp,
-        expiresIn: 300,
-      });
+    return res.json({
+      success: true,
+      channel: 'SCREEN_FALLBACK',
+      message: 'WhatsApp Bot connect nahi hai. QR scan karne ke liye http://localhost:4000/api/auth/whatsapp/qr kholein.',
+      phone,
+      otp: generatedOtp,
+      expiresIn: 300,
+    });
   } catch (e) {
     console.error('SEND_OTP_ERROR:', e);
     return res.status(500).json({ message: 'Failed to send OTP' });
@@ -174,6 +174,8 @@ router.post('/verify-otp', async (req, res) => {
         },
       });
       console.log(`✅ [NEW CUSTOMER CREATED] Phone: ${phone}, Name: ${user.name}`);
+      // Notify Admin that a new customer registered/opened SafarSetu
+      notifyAdminNewCustomer(user);
     }
 
     const token = signToken(user);
@@ -227,6 +229,8 @@ router.post('/firebase-login', async (req, res) => {
         },
       });
       console.log(`✅ [FIREBASE AUTH: NEW CUSTOMER CREATED] Phone: ${phone}, Name: ${user.name}`);
+      // Notify Admin that a new customer registered/opened SafarSetu
+      notifyAdminNewCustomer(user);
     } else {
       console.log(`✅ [FIREBASE AUTH: RETURNING CUSTOMER] Phone: ${phone}, Name: ${user.name}`);
     }
@@ -303,6 +307,26 @@ router.patch('/profile', authMiddleware(['CUSTOMER', 'DRIVER', 'ADMIN']), async 
   } catch (e) {
     console.error('UPDATE_PROFILE_ERROR:', e);
     return res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// ── SAVE EXPO PUSH TOKEN ──
+router.post('/save-push-token', authMiddleware(['CUSTOMER', 'DRIVER', 'ADMIN', 'SUPERADMIN']), async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'Push token required' });
+    try {
+      await prisma.user.update({
+        where: { id: req.auth.sub },
+        data: { expoPushToken: String(token) },
+      });
+    } catch (_err) {
+      console.warn('Could not save expo push token to user record:', _err.message);
+    }
+    return res.json({ success: true, message: 'Push token saved successfully' });
+  } catch (e) {
+    console.error('SAVE_PUSH_TOKEN_ERROR:', e);
+    return res.status(500).json({ message: 'Error saving push token' });
   }
 });
 

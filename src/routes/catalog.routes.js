@@ -24,4 +24,32 @@ router.get('/cars', async (_req, res) => {
   }
 });
 
+router.get('/settings', async (_req, res) => {
+  try {
+    let settings = null;
+    try {
+      settings = await prisma.appSettings.findFirst();
+    } catch (_err) {
+      // Table might not exist yet if db push hasn't run on local db
+    }
+
+    return res.json({
+      qrCodeUrl: settings?.qrCodeUrl || null,
+      upiId: settings?.upiId || '9755339783@upi',
+      advanceAmount: settings?.advanceAmount || 200,
+      helpline1: settings?.helpline1 || '6261828036',
+      helpline2: settings?.helpline2 || '9755339783',
+    });
+  } catch (e) {
+    console.error('SETTINGS_FETCH_ERROR:', e);
+    return res.json({
+      qrCodeUrl: null,
+      upiId: '9755339783@upi',
+      advanceAmount: 200,
+      helpline1: '6261828036',
+      helpline2: '9755339783',
+    });
+  }
+});
+
 export default router;

@@ -40,11 +40,13 @@ model User {
   name         String
   role         Role
   location     String?
-  whatsapp     String?
+  whatsapp      String?
   plainPassword String?
-  deleted      Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  expoPushToken String?  @db.VarChar(255)
+  isFirstLogin  Boolean  @default(true)
+  deleted       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   driverProfile      DriverProfile?
   bookingsAsCustomer Booking[] @relation("CustomerBooking")
@@ -100,6 +102,9 @@ model Booking {
   status       BookingStatus @default(PENDING)
   bookingDate  String
   bookingTime  String
+  advancePaid   Float         @default(0)
+  advanceStatus String        @default("PENDING")
+  advanceUtr    String?
   createdAt    DateTime      @default(now())
 
   payments Payment[]
@@ -118,4 +123,16 @@ model Payment {
   date         String
 
   @@map("payment")
+}
+
+model AppSettings {
+  id            Int      @id @default(1)
+  qrCodeUrl     String?  @db.LongText
+  upiId         String?  @default("9755339783@upi")
+  advanceAmount Float    @default(200)
+  helpline1     String   @default("6261828036")
+  helpline2     String   @default("9755339783")
+  updatedAt     DateTime @updatedAt
+
+  @@map("appsettings")
 }

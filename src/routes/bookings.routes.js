@@ -4,6 +4,13 @@ import prisma from '../prisma.js';
 import { authMiddleware } from '../auth.js';
 import { bookingToJson, STATUS_FROM_UI, getBookingOtp } from '../formatters.js';
 import { resolveRoute } from '../services/map.service.js';
+import {
+  notifyAdminNewBooking,
+  notifyAdminAdvancePayment,
+  notifyDriverNewAssignment,
+  notifyCustomerDriverAssigned,
+  notifyCustomerTripStatus,
+} from '../services/notification.service.js';
 
 const router = Router();
 
@@ -96,6 +103,10 @@ router.post('/', authMiddleware(['CUSTOMER']), async (req, res) => {
       },
       include: includeBooking,
     });
+
+    // Notify Admin of new booking creation
+    notifyAdminNewBooking(booking, booking.customer?.name);
+
     return res.status(201).json(bookingToJson(booking));
   } catch (e) {
     console.error(e);
@@ -272,6 +283,14 @@ router.patch('/:id', authMiddleware(['ADMIN', 'DRIVER', 'CUSTOMER']), async (req
       }
     }
 
+    // Trigger Notifications for Driver & Customer
+    if (req.body.driverId) {
+      notifyDriverNewAssignment(req.body.driverId, updated);
+      notifyCustomerDriverAssigned(updated, updated.driver?.name, updated.driver?.driverProfile?.vehicleNumber);
+    } else if (updated.status !== prevStatus) {
+      notifyCustomerTripStatus(updated.customerId, updated.id, updated.status);
+    }
+
     return res.json(bookingToJson(updated));
   } catch (e) {
     console.error(e);
@@ -338,6 +357,37 @@ router.get('/driver-stats', authMiddleware(['DRIVER']), async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ── CUSTOMER ADVANCE BOOKING PAYMENT SUBMISSION ──
+router.post('/:id/advance-payment', authMiddleware(['CUSTOMER']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { advanceAmount, utr } = req.body;
+    const booking = await prisma.booking.findUnique({ where: { id }, include: includeBooking });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (booking.customerId !== req.auth.sub) {
+      return res.status(403).json({ message: 'Not your booking' });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        advancePaid: advanceAmount ? Number(advanceAmount) : 200,
+        advanceStatus: 'PAID',
+        advanceUtr: utr ? String(utr).trim() : 'SUBMITTED_ONLINE',
+      },
+      include: includeBooking,
+    });
+
+    // Notify Admin of advance payment receipt
+    notifyAdminAdvancePayment(updated);
+
+    return res.json({ success: true, booking: bookingToJson(updated) });
+  } catch (e) {
+    console.error('ADVANCE_PAY_ERROR:', e);
+    return res.status(500).json({ message: 'Failed to record advance payment' });
   }
 });
 
