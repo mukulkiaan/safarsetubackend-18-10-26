@@ -566,29 +566,29 @@ router.patch('/settings', async (req, res) => {
       updated = await prisma.appSettings.update({
         where: { id: existing.id },
         data: {
-          ...(qrCodeUrl !== undefined ? { qrCodeUrl } : {}),
-          ...(upiId !== undefined ? { upiId } : {}),
-          ...(advanceAmount !== undefined ? { advanceAmount: parseFloat(advanceAmount) } : {}),
-          ...(helpline1 !== undefined ? { helpline1 } : {}),
-          ...(helpline2 !== undefined ? { helpline2 } : {}),
+          ...(qrCodeUrl !== undefined ? { qrCodeUrl: qrCodeUrl ? String(qrCodeUrl) : null } : {}),
+          ...(upiId !== undefined ? { upiId: String(upiId) } : {}),
+          ...(advanceAmount !== undefined ? { advanceAmount: parseFloat(advanceAmount) || 200 } : {}),
+          ...(helpline1 !== undefined ? { helpline1: String(helpline1) } : {}),
+          ...(helpline2 !== undefined ? { helpline2: String(helpline2) } : {}),
         },
       });
     } else {
       updated = await prisma.appSettings.create({
         data: {
           id: 1,
-          qrCodeUrl: qrCodeUrl || null,
-          upiId: upiId || '9755339783@upi',
+          qrCodeUrl: qrCodeUrl ? String(qrCodeUrl) : null,
+          upiId: upiId ? String(upiId) : '9755339783@upi',
           advanceAmount: advanceAmount ? parseFloat(advanceAmount) : 200,
-          helpline1: helpline1 || '6261828036',
-          helpline2: helpline2 || '9755339783',
+          helpline1: helpline1 ? String(helpline1) : '6261828036',
+          helpline2: helpline2 ? String(helpline2) : '9755339783',
         },
       });
     }
     return res.json({ success: true, settings: updated });
   } catch (e) {
     console.error('UPDATE_ADMIN_SETTINGS_ERROR:', e);
-    return res.status(500).json({ message: 'Failed to update settings' });
+    return res.status(500).json({ message: 'Failed to update settings: ' + (e.message || 'Server error') });
   }
 });
 
