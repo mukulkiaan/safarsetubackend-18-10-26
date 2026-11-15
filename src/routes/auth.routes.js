@@ -106,14 +106,14 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
-    // 2. If WhatsApp bot is not yet linked, fallback to SMS / screen code
+    // 2. If WhatsApp bot is not yet linked, fallback to smart instant verification code
     otpStore.set(phone, { otp: generatedOtp, expiresAt });
-    console.log(`📲 [FALLBACK OTP GENERATED] Phone: ${phone} -> OTP: ${generatedOtp}`);
+    console.log(`📲 [SMART VERIFICATION OTP GENERATED] Phone: ${phone} -> OTP: ${generatedOtp}`);
 
     return res.json({
       success: true,
       channel: 'SCREEN_FALLBACK',
-      message: 'WhatsApp Bot connect nahi hai. QR scan karne ke liye http://localhost:4000/api/auth/whatsapp/qr kholein.',
+      message: `Aapka verification code hai: ${generatedOtp}`,
       phone,
       otp: generatedOtp,
       expiresIn: 300,
