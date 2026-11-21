@@ -537,18 +537,18 @@ router.get('/settings', async (_req, res) => {
 
     return res.json({
       qrCodeUrl: settings?.qrCodeUrl || null,
-      upiId: settings?.upiId || '9755339783@upi',
-      advanceAmount: settings?.advanceAmount || 200,
-      helpline1: settings?.helpline1 || '6261828036',
-      helpline2: settings?.helpline2 || '9755339783',
+      upiId: settings?.upiId || '',
+      advanceAmount: settings?.advanceAmount ?? 200,
+      helpline1: settings?.helpline1 || '',
+      helpline2: settings?.helpline2 || '',
     });
   } catch (e) {
     return res.json({
       qrCodeUrl: null,
-      upiId: '9755339783@upi',
+      upiId: '',
       advanceAmount: 200,
-      helpline1: '6261828036',
-      helpline2: '9755339783',
+      helpline1: '',
+      helpline2: '',
     });
   }
 });
@@ -567,10 +567,10 @@ router.patch('/settings', async (req, res) => {
         where: { id: existing.id },
         data: {
           ...(qrCodeUrl !== undefined ? { qrCodeUrl: qrCodeUrl ? String(qrCodeUrl) : null } : {}),
-          ...(upiId !== undefined ? { upiId: String(upiId) } : {}),
-          ...(advanceAmount !== undefined ? { advanceAmount: parseFloat(advanceAmount) || 200 } : {}),
-          ...(helpline1 !== undefined ? { helpline1: String(helpline1) } : {}),
-          ...(helpline2 !== undefined ? { helpline2: String(helpline2) } : {}),
+          ...(upiId !== undefined ? { upiId: String(upiId).trim() } : {}),
+          ...(advanceAmount !== undefined ? { advanceAmount: parseFloat(advanceAmount) || 0 } : {}),
+          ...(helpline1 !== undefined ? { helpline1: String(helpline1).trim() } : {}),
+          ...(helpline2 !== undefined ? { helpline2: String(helpline2).trim() } : {}),
         },
       });
     } else {
@@ -578,10 +578,10 @@ router.patch('/settings', async (req, res) => {
         data: {
           id: 1,
           qrCodeUrl: qrCodeUrl ? String(qrCodeUrl) : null,
-          upiId: upiId ? String(upiId) : '9755339783@upi',
-          advanceAmount: advanceAmount ? parseFloat(advanceAmount) : 200,
-          helpline1: helpline1 ? String(helpline1) : '6261828036',
-          helpline2: helpline2 ? String(helpline2) : '9755339783',
+          upiId: upiId ? String(upiId).trim() : '',
+          advanceAmount: advanceAmount !== undefined ? (parseFloat(advanceAmount) || 0) : 200,
+          helpline1: helpline1 ? String(helpline1).trim() : '',
+          helpline2: helpline2 ? String(helpline2).trim() : '',
         },
       });
     }

@@ -120,7 +120,7 @@ router.post('/send-otp', async (req, res) => {
       return res.json({
         success: true,
         channel: 'WHATSAPP',
-        message: 'OTP aapke WhatsApp par bhej diya gaya hai! Kripya WhatsApp message check karein.',
+        message: 'OTP send your wathsapp.',
         phone,
         expiresIn: 300,
       });
@@ -133,7 +133,7 @@ router.post('/send-otp', async (req, res) => {
     return res.json({
       success: true,
       channel: 'SCREEN_FALLBACK',
-      message: `Aapka verification code hai: ${generatedOtp}`,
+      message: `Your verifcation OTP code: ${generatedOtp}`,
       phone,
       otp: generatedOtp,
       expiresIn: 300,
@@ -173,9 +173,9 @@ router.post('/verify-otp', async (req, res) => {
     // Clean up stored OTP once verified
     otpStore.delete(phone);
 
-    // Find existing customer (or user testing with their phone)
+    // Find existing customer
     let user = await prisma.user.findFirst({
-      where: { phone, deleted: false },
+      where: { phone, role: 'CUSTOMER', deleted: false },
     });
 
     // If new customer, auto-register without requiring signup form
@@ -226,9 +226,9 @@ router.post('/firebase-login', async (req, res) => {
       return res.status(400).json({ message: 'Valid 10-digit phone number required' });
     }
 
-    // Find existing customer (or user testing with their phone)
+    // Find existing customer
     let user = await prisma.user.findFirst({
-      where: { phone, deleted: false },
+      where: { phone, role: 'CUSTOMER', deleted: false },
     });
 
     let isNewUser = false;
