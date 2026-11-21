@@ -30,6 +30,31 @@ async function main() {
     },
   });
 
+  // SafarSetu Primary Helpline Admin
+  await prisma.user.upsert({
+    where: { phone: '6261828036' },
+    update: { role: 'ADMIN' },
+    create: {
+      phone: '6261828036',
+      name: 'SafarSetu Admin',
+      passwordHash: hash('admin'),
+      role: 'ADMIN',
+    },
+  });
+
+  // App Settings
+  await prisma.appSettings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      upiId: '9755339783@upi',
+      advanceAmount: 200,
+      helpline1: '6261828036',
+      helpline2: '9755339783',
+    },
+  });
+
   const customer = await prisma.user.create({
     data: {
       phone: '7777777777',
