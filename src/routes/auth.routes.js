@@ -18,6 +18,23 @@ function sanitizePhone(raw) {
   return digits.length >= 10 ? digits.slice(-10) : digits;
 }
 
+// 🛡️ STRICT FAKE NUMBER FILTER: Only allow genuine Indian mobile numbers
+function isValidIndianMobile(phone) {
+  if (!phone || phone.length !== 10) return false;
+  // Must start with 6, 7, 8, or 9
+  if (!/^[6-9]\d{9}$/.test(phone)) return false;
+  // Block all repeated digits like 9999999999, 8888888888, 7777777777
+  if (/^(\d)\1{9}$/.test(phone)) return false;
+  // Block common fake sequences
+  const fakeList = [
+    '1234567890', '9876543210', '0123456789', '9898989898',
+    '9090909090', '8080808080', '7070707070', '9123456789',
+    '9876501234', '9988776655'
+  ];
+  if (fakeList.includes(phone)) return false;
+  return true;
+}
+
 // ── WHATSAPP BOT STATUS & QR VIEWER ──
 router.get('/whatsapp/status', (_req, res) => {
   return res.json(getWhatsAppStatus());
@@ -78,8 +95,11 @@ router.post('/send-otp', async (req, res) => {
     const rawPhone = req.body.phone;
     const phone = sanitizePhone(rawPhone);
 
-    if (!phone || phone.length !== 10) {
-      return res.status(400).json({ message: 'Valid 10-digit mobile number required' });
+    if (!isValidIndianMobile(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kripya apna valid aur active 10-digit mobile number enter karein (6, 7, 8 ya 9 se shuru hone wala). Fake ya dummy number allow nahi hai.'
+      });
     }
 
     // Generate random 4-digit numeric code
@@ -153,9 +173,9 @@ router.post('/verify-otp', async (req, res) => {
     // Clean up stored OTP once verified
     otpStore.delete(phone);
 
-    // Find existing customer
+    // Find existing customer (or user testing with their phone)
     let user = await prisma.user.findFirst({
-      where: { phone, role: 'CUSTOMER', deleted: false },
+      where: { phone, deleted: false },
     });
 
     // If new customer, auto-register without requiring signup form
@@ -206,9 +226,9 @@ router.post('/firebase-login', async (req, res) => {
       return res.status(400).json({ message: 'Valid 10-digit phone number required' });
     }
 
-    // Find existing customer
+    // Find existing customer (or user testing with their phone)
     let user = await prisma.user.findFirst({
-      where: { phone, role: 'CUSTOMER', deleted: false },
+      where: { phone, deleted: false },
     });
 
     let isNewUser = false;
